@@ -35,7 +35,7 @@ public class HomeActivity extends Activity {
     private final Runnable soft = new Runnable() {
         @Override public void run() {
             if (drawer.getVisibility() != View.VISIBLE) refreshAll(false);   // TTL-gated, conditional GET: nearly free
-            hh.postDelayed(this, 120000);
+            hh.postDelayed(this, 60000);
         }
     };
 
@@ -46,6 +46,7 @@ public class HomeActivity extends Activity {
         @Override public void onReceive(Context c, Intent i) {
             apps.reload();
             drawer.refresh();
+            drawer.styleAll();
             home.invalidate();
         }
     };
@@ -78,9 +79,9 @@ public class HomeActivity extends Activity {
         registerReceiver(pkgRx, f);
         if (drawer.getVisibility() != View.VISIBLE) home.onResumeVisible();
         askPermissionsOnce();
-        refreshAll(false);
+        refreshAll(false, 120000);      // news older than 2 minutes is refreshed as soon as you are back
         hh.removeCallbacks(soft);
-        hh.postDelayed(soft, 120000);
+        hh.postDelayed(soft, 60000);
     }
 
     @Override protected void onPause() {
@@ -91,11 +92,13 @@ public class HomeActivity extends Activity {
         home.stopLoop();
     }
 
-    void refreshAll(boolean force) {
+    void refreshAll(boolean force) { refreshAll(force, -1); }
+
+    void refreshAll(boolean force, long newsAgeMs) {
         Steps.snapshot(this, new Runnable() {
             @Override public void run() { data.loadSteps(Prefs.sp(HomeActivity.this)); home.invalidate(); }
         });
-        Refresher.run(getApplicationContext(), data, force, new Runnable() {
+        Refresher.run(getApplicationContext(), data, force, newsAgeMs, new Runnable() {
             @Override public void run() { home.invalidate(); }
         });
     }
@@ -220,10 +223,10 @@ public class HomeActivity extends Activity {
         final int off = allowClear ? 1 : 0;
         CharSequence[] names = new CharSequence[l.size() + off];
         if (allowClear) names[0] = "\u2715  Clear / default";
-        for (int i = 0; i < l.size(); i++) names[i + off] = l.get(i).label;
-        new AlertDialog.Builder(this).setTitle(title).setItems(names, new DialogInterface.OnClickListener() {
+        for (int i = 0; i < l.size(); i++) names[i + off] = l.get(i).label + (l.get(i).mine ? "" : "  (dual)");
+        new AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert).setTitle(title).setItems(names, new DialogInterface.OnClickListener() {
             @Override public void onClick(DialogInterface d, int w) {
-                if (allowClear && w == 0) cb.pick(null); else cb.pick(l.get(w - off).pkg);
+                if (allowClear && w == 0) cb.pick(null); else cb.pick(l.get(w - off).key);
             }
         }).setNegativeButton("Cancel", null).show();
     }
@@ -259,7 +262,7 @@ public class HomeActivity extends Activity {
     void showNews(final NewsItem it) {
         String body = (it.desc == null || it.desc.isEmpty() ? "No summary was provided by this source." : it.desc)
                 + "\n\n" + it.source + "  \u00B7  " + HomeView.ago(it.ts) + " ago";
-        AlertDialog.Builder b = new AlertDialog.Builder(this).setTitle(it.title).setMessage(body).setNegativeButton("Close", null);
+        AlertDialog.Builder b = new AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert).setTitle(it.title).setMessage(body).setNegativeButton("Close", null);
         if (it.link != null && !it.link.isEmpty()) {
             b.setPositiveButton("Open article", new DialogInterface.OnClickListener() {
                 @Override public void onClick(DialogInterface d, int w) { Open.web(HomeActivity.this, it.link); }
@@ -286,7 +289,7 @@ public class HomeActivity extends Activity {
                         }
                         CharSequence[] t = new CharSequence[l.size()];
                         for (int i = 0; i < t.length; i++) t[i] = l.get(i).title + "\n" + l.get(i).source + " \u00B7 " + HomeView.ago(l.get(i).ts);
-                        new AlertDialog.Builder(HomeActivity.this).setTitle(name.toUpperCase())
+                        new AlertDialog.Builder(HomeActivity.this, android.R.style.Theme_DeviceDefault_Dialog_Alert).setTitle(name.toUpperCase())
                                 .setItems(t, new DialogInterface.OnClickListener() {
                                     @Override public void onClick(DialogInterface d, int w) { showNews(l.get(w)); }
                                 }).setNegativeButton("Close", null).show();
@@ -302,18 +305,19 @@ public class HomeActivity extends Activity {
 
     void showMenu() {
         final String[] modes = {"Saver (still picture)", "Balanced (default)", "Full (smooth)"};
-        final int nm = Prefs.sp(this).getInt("newsmin", 10);
+        final int nm = Prefs.sp(this).getInt("newsmin", 5);
         CharSequence[] items = {
                 "Power mode: " + modes[Prefs.userMode(this)] + " — tap to change",
-                "Icon style: " + AppIndex.STYLE_NAMES[apps.style] + " — tap to change",
+                "Icon pack: " + AppIndex.STYLE_NAMES[apps.style] + " — tap to change",
                 "News refresh: every " + nm + " min — tap to change",
                 "Which app each widget opens…",
                 "Globe grid lines: " + (Prefs.flag(this, "grid", true) ? "on" : "off"),
                 "News hotspots on the globe: " + (Prefs.flag(this, "hot", true) ? "on" : "off"),
                 "Spin the globe by itself: " + (Prefs.flag(this, "rot", true) ? "on" : "off"),
                 "Refresh news, stocks and weather now",
+                "Open the Google News app",
                 "Choose this as your home app (Android settings)"};
-        new AlertDialog.Builder(this).setTitle("Fold HUD").setItems(items, new DialogInterface.OnClickListener() {
+        new AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert).setTitle("Fold HUD").setItems(items, new DialogInterface.OnClickListener() {
             @Override public void onClick(DialogInterface d, int w) {
                 if (w == 0) {
                     int m = (Prefs.userMode(HomeActivity.this) + 1) % 3;
@@ -324,7 +328,7 @@ public class HomeActivity extends Activity {
                     drawer.refresh();
                     Toast.makeText(HomeActivity.this, "Icons: " + AppIndex.STYLE_NAMES[apps.style], Toast.LENGTH_SHORT).show();
                 } else if (w == 2) {
-                    int n = nm <= 5 ? 10 : nm <= 10 ? 30 : 5;
+                    int n = nm <= 2 ? 5 : nm <= 5 ? 10 : nm <= 10 ? 30 : 2;
                     Prefs.sp(HomeActivity.this).edit().putInt("newsmin", n).apply();
                     refreshAll(true);
                     Toast.makeText(HomeActivity.this, "News refresh every " + n + " min", Toast.LENGTH_SHORT).show();
@@ -333,6 +337,7 @@ public class HomeActivity extends Activity {
                 else if (w == 5) Prefs.setFlag(HomeActivity.this, "hot", !Prefs.flag(HomeActivity.this, "hot", true));
                 else if (w == 6) Prefs.setFlag(HomeActivity.this, "rot", !Prefs.flag(HomeActivity.this, "rot", true));
                 else if (w == 7) refreshAll(true);
+                else if (w == 8) { if (!Open.pkg(HomeActivity.this, "com.google.android.apps.magazines")) Open.web(HomeActivity.this, "https://news.google.com"); }
                 else Open.start(HomeActivity.this, new Intent(Settings.ACTION_HOME_SETTINGS));
                 home.stopLoop();
                 home.startLoop();
@@ -347,13 +352,13 @@ public class HomeActivity extends Activity {
             String p = Prefs.sp(this).getString("tgt_" + WIDGETS[i][1], null);
             n[i] = WIDGETS[i][0] + " → " + (p == null ? "default" : p);
         }
-        new AlertDialog.Builder(this).setTitle("Which app each widget opens").setItems(n, new DialogInterface.OnClickListener() {
+        new AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert).setTitle("Which app each widget opens").setItems(n, new DialogInterface.OnClickListener() {
             @Override public void onClick(DialogInterface d, int w) {
                 final String key = "tgt_" + WIDGETS[w][1];
                 pickApp(WIDGETS[w][0], true, new PickCb() {
                     @Override public void pick(String pkg) {
                         android.content.SharedPreferences.Editor e = Prefs.sp(HomeActivity.this).edit();
-                        if (pkg == null) e.remove(key); else e.putString(key, pkg);
+                        if (pkg == null) e.remove(key); else e.putString(key, pkg.split("#")[0]);
                         e.apply();
                         Toast.makeText(HomeActivity.this, "Saved", Toast.LENGTH_SHORT).show();
                     }

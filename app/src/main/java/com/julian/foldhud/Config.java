@@ -7,7 +7,8 @@ final class Config {
         {"BBC", "https://feeds.bbci.co.uk/news/world/rss.xml"},
         {"AL JAZEERA", "https://www.aljazeera.com/xml/rss/all.xml"},
         {"NPR", "https://feeds.npr.org/1004/rss.xml"},
-        {"DW", "https://rss.dw.com/rdf/rss-en-world"}
+        {"DW", "https://rss.dw.com/rdf/rss-en-world"},
+        {"GOOGLE NEWS", "https://news.google.com/rss/headlines/section/topic/WORLD?hl=en-US&gl=US&ceid=US:en"}
     };
     static final String[][] MYANMAR = {
         {"IRRAWADDY", "https://www.irrawaddy.com/feed"},

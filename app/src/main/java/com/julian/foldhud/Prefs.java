@@ -29,7 +29,7 @@ final class Prefs {
     }
 
     /** How old the news may get before it is fetched again (minutes: 5, 10 or 30). Feeds that did not change cost almost no data. */
-    static long newsTtl(Context c) { return sp(c).getInt("newsmin", 10) * 60000L; }
+    static long newsTtl(Context c) { return sp(c).getInt("newsmin", 5) * 60000L; }
 
     static boolean flag(Context c, String k, boolean def) { return sp(c).getBoolean(k, def); }
     static void setFlag(Context c, String k, boolean v) { sp(c).edit().putBoolean(k, v).apply(); }

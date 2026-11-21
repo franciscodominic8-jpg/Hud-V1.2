@@ -24,7 +24,10 @@ final class Refresher {
     private static final ExecutorService EX = Executors.newSingleThreadExecutor();
     private static volatile boolean busy;
 
-    static void run(final Context app, final Data d, final boolean force, final Runnable done) {
+    static void run(Context app, Data d, boolean force, Runnable done) { run(app, d, force, -1, done); }
+
+    /** newsAgeMs &gt; 0: refresh the news when it is older than this (e.g. when you come back to the home screen). */
+    static void run(final Context app, final Data d, final boolean force, final long newsAgeMs, final Runnable done) {
         if (busy) return;
         ConnectivityManager cm = (ConnectivityManager) app.getSystemService(Context.CONNECTIVITY_SERVICE);
         if (cm == null || cm.getActiveNetwork() == null) return;
@@ -32,7 +35,7 @@ final class Refresher {
         final int mult = (pm != null && pm.isPowerSaveMode()) ? 4 : 1;      // refresh a quarter as often in Battery Saver
         final long now = System.currentTimeMillis();
         final boolean needLoc = force || Double.isNaN(d.lat) || now - d.locUpd > Config.LOC_TTL * mult;
-        final boolean needNews = force || now - d.newsUpd > Prefs.newsTtl(app) * mult;
+        final boolean needNews = force || now - d.newsUpd > (newsAgeMs > 0 ? newsAgeMs : Prefs.newsTtl(app)) * mult;
         final boolean needStocks = force || now - d.stocksUpd > Config.STOCKS_TTL * mult;
         final boolean needWx = force || d.weatherUpd == 0 || now - d.weatherUpd > Config.WEATHER_TTL * mult || needLoc;
         if (!(needLoc || needNews || needStocks || needWx)) return;

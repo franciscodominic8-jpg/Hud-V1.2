@@ -53,3 +53,17 @@ Build မအောင်ရင် မအောင်တဲ့ run ထဲက အ�
 ## ဘက်ထရီ သက်သာစေပုံ
 Saver (ပုံတည်ငြိမ်)၊ Balanced (မူလ)၊ Full။ Battery Saver ဖွင့်ထားရင် ဒါမှမဟုတ် ဘက်ထရီ ၁၅% အောက်ရောက်ရင် Saver ကို အလိုအလျောက်သုံးပါတယ်။
 တခြား app ပေါ်မှာရှိနေရင် ဒါမှမဟုတ် screen ပိတ်ထားရင် ဘာမှ မလည်ပါဘူး။
+
+
+## Icon pack and app drawer (v3)
+- Icon pack: Menu > Icon pack. HUD icons (orange or white line symbols drawn in code), HUD letters, Tinted originals, Original.
+- Dual Messenger / work-profile copies of apps appear in the drawer with an orange "2" badge, under the Work chip, and can go in the dock or quick open.
+- Drawer: search (G opens Google), chips, category list, Recent row, A-Z rail, top used, suggested, mini HUD and dock. Hold an app: dock, quick open, favourite, hide, app info.
+
+## v4
+- Unfolded portrait now uses the same panels and look as unfolded landscape (three columns, news full height).
+- Default icon pack is HUD letters (Ph, Me, Ca ...) as in the drawer mock-up; change it in Menu > Icon pack.
+- News: Google News world headlines added; refresh every 5 minutes by default (menu: 2/5/10/30), every time you return to the home screen if older than 2 minutes, and a check every minute while the home screen is showing.
+
+## v6
+- Unfolded portrait: new layout D (big clock + globe on top, three columns below).

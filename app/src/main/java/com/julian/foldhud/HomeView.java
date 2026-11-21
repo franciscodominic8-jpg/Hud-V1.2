@@ -32,6 +32,7 @@ final class HomeView extends View {
     final Data d;
     final GlobeRenderer globe = new GlobeRenderer();
     final Paint pf = new Paint(Paint.ANTI_ALIAS_FLAG), ps = new Paint(Paint.ANTI_ALIAS_FLAG), pt = new Paint(Paint.ANTI_ALIAS_FLAG);
+    final Paint pbmp = new Paint(Paint.FILTER_BITMAP_FLAG);   // for pictures: always fully opaque (pf's colour alpha made the dock look faded)
     final Path path = new Path();
     final RectF rf = new RectF();
     final float[] tmp = new float[3];
@@ -78,8 +79,8 @@ final class HomeView extends View {
         float den = getResources().getDisplayMetrics().density;
         boolean wide = w > h, big = Math.min(w, h) / den >= 500f;
         layout = big ? (wide ? 0 : 1) : (wide ? 3 : 2);
-        DW = layout == 0 ? 884f : layout == 1 ? 736f : layout == 2 ? 360f : 924f;
-        DH = layout == 0 ? 736f : layout == 1 ? 884f : layout == 2 ? 924f : 360f;
+        DW = layout == 0 ? 884f : layout == 1 ? 816f : layout == 2 ? 360f : 924f;
+        DH = layout == 0 ? 736f : layout == 1 ? 980f : layout == 2 ? 924f : 360f;
         s = Math.min(w / DW, h / DH);
         ox = (w - DW * s) / 2f;
         oy = (h - DH * s) / 2f;
@@ -327,36 +328,48 @@ final class HomeView extends View {
         googleBar(c, 12, 872, 336);
     }
 
-    /** Unfolded, held upright (almost square screen, a little taller than wide). */
+    /** Unfolded, held upright: big clock and globe on top, then three columns (phone/network/weather, news, calendar/steps/stocks). */
     void drawInnerPortrait(Canvas c, long now) {
         text(c, "Julian's Fold", 16, 33, 19, WHITE, LEFT, true);
         hit(8, 8, 190, 34, A_MENU, 0);
         if (!running || (now / 700) % 2 == 0) { pf.setStyle(Paint.Style.FILL); pf.setColor(ORANGE); c.drawCircle(158, 27, 3f, pf); }
         text(c, "LIVE", 166, 31, 9, 0xC8FFFFFF, LEFT, false);
         String[] ch = {"BATTERY " + bat + "%", "MEMORY " + memPct + "%", "STORAGE " + stoPct + "%", "\u2193 " + kbps(rxKbps)};
-        for (int i = 0; i < 4; i++) chip(c, 16 + i * 112, 44, 106, ch[i]);
-        hit(16, 44, 448, 22, A_CARE, 0);
-        text(c, timeStr, 720, 34, 34, WHITE, RIGHT, true);
-        text(c, dateStr + "   \u2197 Clock", 720, 52, 11, 0xC8FFFFFF, RIGHT, false);
-        hit(560, 4, 160, 60, A_CLOCK, 0);
-        googleBar(c, 16, 80, 560);
-        box(c, 584, 80, 136, 36, 18, 0xFF0B0F14, 0x30FFFFFF);
-        text(c, "Layers \u25BE", 652, 103, 13, WHITE, CENTER, false);
-        hit(584, 80, 136, 36, A_MENU, 0);
-        globeWidget(c, 368, 262, 130f, 3, now);
-        tilesCompact(c, 16, 140);
-        text(c, "drag to rotate \u00B7 tap a country for its news", 368, 404, 10, 0xB8FFFFFF, CENTER, false);
-        float y0 = 416f;
-        phonePanel(c, 16, y0, 224, 116);
-        networkPanel(c, 16, y0 + 124, 224, 80);
-        weatherPanel(c, 16, y0 + 212, 224, 118);
-        moonPanel(c, 16, y0 + 338, 224, 52);
-        breakingPanel(c, 252, y0, 224, 74);
-        stepsPanel(c, 252, y0 + 82, 224, 110, true);
-        calendarPanel(c, 252, y0 + 200, 224, 172);
-        newsPanel(c, 488, y0, 232, 236);
-        stocksPanel(c, 488, y0 + 244, 232);
-        dock(c, 368, 826, 5);
+        for (int i = 0; i < 4; i++) chip(c, 200 + i * 112, 10, 106, ch[i]);
+        hit(200, 10, 448, 22, A_CARE, 0);
+
+        // hero band: clock + weather + search on the left, globe on the right
+        text(c, timeStr, 16, 138, 84, WHITE, LEFT, true);
+        text(c, dateStr + "   \u2197 Clock", 20, 168, 13, 0xC8FFFFFF, LEFT, false);
+        hit(10, 66, 380, 112, A_CLOCK, 0);
+        if (d.hasW) {
+            text(c, Math.round(d.temp) + "\u00B0C  " + d.wdesc, 20, 204, 22, WHITE, LEFT, true);
+            text(c, "wind " + Math.round(d.wind) + " km/h \u00B7 " + d.hum + "%", 20, 224, 11, 0xC0FFFFFF, LEFT, false);
+            hit(10, 182, 300, 48, A_WEATHER, 0);
+        }
+        googleBar(c, 16, 250, 250);
+        box(c, 274, 250, 108, 36, 18, 0xFF0B0F14, 0x30FFFFFF);
+        text(c, "Layers \u25BE", 328, 273, 13, WHITE, CENTER, false);
+        hit(274, 250, 108, 36, A_MENU, 0);
+        globeWidget(c, 612, 208, 138f, 3, now);
+        text(c, "drag to rotate \u00B7 tap a country for its news", 612, 372, 10, 0xB8FFFFFF, CENTER, false);
+        breakingPanel(c, 16, 384, 784, 64);
+
+        // left column
+        phonePanel(c, 16, 460, 252, 150);
+        networkPanel(c, 16, 622, 252, 100);
+        weatherPanel(c, 16, 734, 252, 140);
+        // middle: news, tall
+        newsPanel(c, 282, 460, 252, 414);
+        // right column
+        calendarPanel(c, 548, 460, 252, 170);
+        stepsPanel(c, 548, 642, 252, 92, true);
+        stocksPanel(c, 548, 746, 252);
+
+        // bottom row
+        tiles(c, 16, 896, 210, 70);
+        dock(c, 408, 906, 5);
+        alertsPanel(c, 590, 902, 210);
     }
 
     /** Folded (cover screen), held sideways: a wide, short screen. */
@@ -380,9 +393,9 @@ final class HomeView extends View {
         ring(c, x + 42, y + 68, 28, bat, ORANGE);
         text(c, bat + "%", x + 42, y + 73, 13, WHITE, CENTER, true);
         text(c, "Memory " + memPct + "%", x + 82, y + 50, 11, WHITE, LEFT, false);
-        bar(c, x + 82, y + 56, 116, memPct);
+        bar(c, x + 82, y + 56, w - 108, memPct);
         text(c, "Storage " + stoPct + "%", x + 82, y + 82, 11, WHITE, LEFT, false);
-        bar(c, x + 82, y + 88, 116, stoPct);
+        bar(c, x + 82, y + 88, w - 108, stoPct);
         text(c, "Battery " + bat + "%", x + 10, y + h - 10, 10, 0xC8FFFFFF, LEFT, false);
     }
 
@@ -398,18 +411,19 @@ final class HomeView extends View {
         text(c, Math.round(d.temp) + "\u00B0C", x + 10, y + 52, 30, WHITE, LEFT, true);
         text(c, d.wdesc + " \u00B7 wind " + Math.round(d.wind) + " km/h \u00B7 " + d.hum + "%", x + 10, y + 72, 10, 0xC8FFFFFF, LEFT, false);
         for (int i = 0; i < 3; i++) {
-            text(c, d.fday[i] == null ? "--" : d.fday[i], x + 10 + i * 70, y + 96, 10, 0xD0FFFFFF, LEFT, false);
-            text(c, d.fhi[i] + "/" + d.flo[i] + "\u00B0", x + 10 + i * 70, y + 110, 10, WHITE, LEFT, false);
+            text(c, d.fday[i] == null ? "--" : d.fday[i], x + 10 + i * ((w - 20f) / 3f), y + 96, 10, 0xD0FFFFFF, LEFT, false);
+            text(c, d.fhi[i] + "/" + d.flo[i] + "\u00B0", x + 10 + i * ((w - 20f) / 3f), y + 110, 10, WHITE, LEFT, false);
         }
     }
 
     void calendarPanel(Canvas c, float x, float y, float w, float h) {
         panel(c, x, y, w, h, monthStr, "Calendar", false, A_CAL, 0);
         String dn = "SMTWTFS";
-        for (int i = 0; i < 7; i++) text(c, dn.substring(i, i + 1), x + 20 + i * 30, y + 34, 10, 0xB8FFFFFF, CENTER, false);
+        float cw = (w - 40f) / 6f, rh = Math.max(22f, Math.min(36f, (h - 70f) / 6f));
+        for (int i = 0; i < 7; i++) text(c, dn.substring(i, i + 1), x + 20 + i * cw, y + 34, 10, 0xB8FFFFFF, CENTER, false);
         for (int day = 1; day <= dim; day++) {
             int idx = firstDow + day - 1, col = idx % 7, row = idx / 7;
-            float cx = x + 20 + col * 30, cy = y + 56 + row * 22;
+            float cx = x + 20 + col * cw, cy = y + 56 + row * rh;
             if (day == today) {
                 pf.setStyle(Paint.Style.FILL);
                 pf.setColor(ORANGE);
@@ -508,8 +522,8 @@ final class HomeView extends View {
             ring(c, x + 34, y + 52, 22, pct, ORANGE);
             text(c, pct + "%", x + 34, y + 57, 12, WHITE, CENTER, true);
             text(c, num(tdy) + " steps", x + 70, y + 40, 15, WHITE, LEFT, true);
-            text(c, "goal " + num(Config.STEP_GOAL) + " \u00B7 week " + num(total), x + 70, y + 58, 10, 0xC8FFFFFF, LEFT, false);
-            text(c, "average " + num(avg) + " a day", x + 70, y + 72, 10, 0xC8FFFFFF, LEFT, false);
+            text(c, "week " + num(total), x + 70, y + 58, 10, 0xC8FFFFFF, LEFT, false);
+            text(c, "avg " + num(avg) + " a day", x + 70, y + 72, 10, 0xC8FFFFFF, LEFT, false);
         } else {
             text(c, num(tdy) + " steps today", x + 12, y + 36, 13, WHITE, LEFT, true);
             text(c, "week " + num(total) + " \u00B7 avg " + num(avg), x + 12, y + 54, 10, 0xC8FFFFFF, LEFT, false);
@@ -574,7 +588,7 @@ final class HomeView extends View {
         Bitmap b = pkg == null ? null : host.apps.icon(pkg);
         if (b != null) {
             rf.set(x + 4, y + 4, x + 40, y + 40);
-            c.drawBitmap(b, null, rf, pf);
+            c.drawBitmap(b, null, rf, pbmp);
         } else {
             text(c, "+", x + 22, y + 29, 18, ORANGE, CENTER, true);
         }
@@ -686,7 +700,7 @@ final class HomeView extends View {
 
     void dock(Canvas c, float cx, float y, int count) {
         float total = (count + 1) * 58f;
-        box(c, cx - total / 2 - 6, y - 10, total + 12, 66, 26, 0x14FFFFFF, 0x2AFFFFFF);
+        box(c, cx - total / 2 - 6, y - 10, total + 12, 66, 26, 0xFF101318, 0x55FFFFFF);
         float x0 = cx - total / 2 + 7;
         for (int i = 0; i < count; i++) {
             String pkg = host.dock[i];
@@ -694,7 +708,7 @@ final class HomeView extends View {
             float ix = x0 + i * 58;
             if (b != null) {
                 rf.set(ix, y, ix + 44, y + 44);
-                c.drawBitmap(b, null, rf, pf);
+                c.drawBitmap(b, null, rf, pbmp);
             } else {
                 box(c, ix, y, 44, 44, 13, 0xFF171B22, 0x2EFFFFFF);
             }
