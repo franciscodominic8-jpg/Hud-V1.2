@@ -369,9 +369,9 @@ final class DrawerView extends LinearLayout {
             setPadding(px(12), sh ? px(14) : px(34), px(12), px(8));
             railPanel.setVisibility(wide && !sh ? VISIBLE : GONE);
             right.setVisibility(nl == 2 && !sh ? VISIBLE : GONE);
-            recentPanel.setVisibility(sh ? GONE : VISIBLE);
-            dockBar.setVisibility(sh ? GONE : VISIBLE);
-            foot.setVisibility(sh ? GONE : VISIBLE);
+            recentPanel.setVisibility(GONE);      // no Recent row: use the Recent chip instead
+            dockBar.setVisibility(GONE);          // no dock inside the drawer
+            foot.setVisibility(GONE);
             clockBox.setVisibility(wide ? VISIBLE : GONE);
             ViewGroup par = (ViewGroup) searchBox.getParent();
             if (par != null) par.removeView(searchBox);

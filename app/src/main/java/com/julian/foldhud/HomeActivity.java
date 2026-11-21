@@ -77,6 +77,7 @@ public class HomeActivity extends Activity {
         f.addAction(Intent.ACTION_PACKAGE_CHANGED);
         f.addDataScheme("package");
         registerReceiver(pkgRx, f);
+        if (apps.reload()) { drawer.refresh(); drawer.styleAll(); home.invalidate(); }   // apps installed while we were away
         if (drawer.getVisibility() != View.VISIBLE) home.onResumeVisible();
         askPermissionsOnce();
         refreshAll(false, 120000);      // news older than 2 minutes is refreshed as soon as you are back

@@ -112,7 +112,10 @@ final class AppIndex {
     }
 
     // ---------------- the list ----------------
-    void reload() {
+    private String sig = "";
+
+    /** Re-reads the installed apps. Returns true when the list changed (new, removed or updated app). */
+    boolean reload() {
         ArrayList<App> out = new ArrayList<>();
         HashMap<String, App> map = new HashMap<>();
         try {
@@ -160,10 +163,15 @@ final class AppIndex {
             int c = x.label.compareToIgnoreCase(y.label);
             return c != 0 ? c : Boolean.compare(!x.mine, !y.mine);
         });
+        StringBuilder sg = new StringBuilder();
+        for (App a : out) sg.append(a.key).append('|').append(a.label).append(';');
+        if (sg.toString().equals(sig)) return false;
+        sig = sg.toString();
         apps = out;
         byKey.clear();
         byKey.putAll(map);
         icons.evictAll();
+        return true;
     }
 
     private void classify(App a, ApplicationInfo ai) {
