@@ -9,11 +9,14 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.LauncherApps;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Looper;
+import android.os.UserHandle;
 import android.provider.MediaStore;
 import android.provider.Settings;
 import android.view.View;
@@ -43,13 +46,29 @@ public class HomeActivity extends Activity {
         @Override public void onReceive(Context c, Intent i) { if (home != null) home.invalidate(); }
     };
     private final BroadcastReceiver pkgRx = new BroadcastReceiver() {
-        @Override public void onReceive(Context c, Intent i) {
-            apps.reload();
-            drawer.refresh();
-            drawer.styleAll();
-            home.invalidate();
-        }
+        @Override public void onReceive(Context c, Intent i) { appsChanged(); }
     };
+
+    /** Android tells us about installs, removals and updates in every profile (also the Dual Messenger one). */
+    private final LauncherApps.Callback laCb = new LauncherApps.Callback() {
+        @Override public void onPackageRemoved(String p, UserHandle u) { appsChanged(); }
+        @Override public void onPackageAdded(String p, UserHandle u) { appsChanged(); }
+        @Override public void onPackageChanged(String p, UserHandle u) { appsChanged(); }
+        @Override public void onPackagesAvailable(String[] p, UserHandle u, boolean r) { appsChanged(); }
+        @Override public void onPackagesUnavailable(String[] p, UserHandle u, boolean r) { appsChanged(); }
+    };
+
+    void appsChanged() {
+        runOnUiThread(new Runnable() {
+            @Override public void run() {
+                if (apps == null || drawer == null) return;
+                apps.forceReload();
+                drawer.refresh();
+                drawer.styleAll();
+                home.invalidate();
+            }
+        });
+    }
 
     @Override protected void onCreate(Bundle b) {
         super.onCreate(b);
@@ -77,6 +96,9 @@ public class HomeActivity extends Activity {
         f.addAction(Intent.ACTION_PACKAGE_CHANGED);
         f.addDataScheme("package");
         registerReceiver(pkgRx, f);
+        try {
+            ((LauncherApps) getSystemService(Context.LAUNCHER_APPS_SERVICE)).registerCallback(laCb, new android.os.Handler(Looper.getMainLooper()));
+        } catch (Exception e) { /* broadcasts still work */ }
         if (apps.reload()) { drawer.refresh(); drawer.styleAll(); home.invalidate(); }   // apps installed while we were away
         if (drawer.getVisibility() != View.VISIBLE) home.onResumeVisible();
         askPermissionsOnce();
@@ -89,6 +111,7 @@ public class HomeActivity extends Activity {
         super.onPause();
         try { unregisterReceiver(tickRx); } catch (Exception e) { /* not registered */ }
         try { unregisterReceiver(pkgRx); } catch (Exception e) { /* not registered */ }
+        try { ((LauncherApps) getSystemService(Context.LAUNCHER_APPS_SERVICE)).unregisterCallback(laCb); } catch (Exception e) { /* not registered */ }
         hh.removeCallbacks(soft);
         home.stopLoop();
     }
@@ -141,6 +164,7 @@ public class HomeActivity extends Activity {
     // ---------------- drawer ----------------
     void openDrawer() {
         if (drawer.getVisibility() == View.VISIBLE) return;
+        if (apps.reload()) drawer.styleAll();      // always up to date when the drawer opens
         drawer.onOpen();
         drawer.setVisibility(View.VISIBLE);
         drawer.setAlpha(0f);

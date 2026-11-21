@@ -114,6 +114,9 @@ final class AppIndex {
     // ---------------- the list ----------------
     private String sig = "";
 
+    /** Like reload(), but also redraws icons (an app was updated or changed). */
+    boolean forceReload() { sig = ""; return reload(); }
+
     /** Re-reads the installed apps. Returns true when the list changed (new, removed or updated app). */
     boolean reload() {
         ArrayList<App> out = new ArrayList<>();
@@ -130,9 +133,16 @@ final class AppIndex {
                     String pkg = li.getComponentName().getPackageName();
                     if (pkg.equals(ctx.getPackageName())) continue;
                     String key = mine ? pkg : pkg + "#" + serial;
-                    if (map.containsKey(key)) continue;
+                    String lab = String.valueOf(li.getLabel());
+                    if (map.containsKey(key)) {                 // a second launcher entry of the same package (different name): list it too
+                        boolean same = false;
+                        for (App o : out) if (o.pkg.equals(pkg) && o.mine == mine && o.label.equals(lab)) same = true;
+                        if (same) continue;
+                        key = key + "/" + li.getComponentName().getClassName();
+                        if (map.containsKey(key)) continue;
+                    }
                     App a = new App();
-                    a.label = String.valueOf(li.getLabel());
+                    a.label = lab;
                     a.pkg = pkg;
                     a.key = key;
                     a.cn = li.getComponentName();
