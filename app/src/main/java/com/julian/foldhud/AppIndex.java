@@ -380,6 +380,10 @@ final class AppIndex {
             Intent i = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:" + a.pkg));
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             ctx.startActivity(i);
-        } catch (Exception e) { /* not available */ }
+        } catch (Exception e) {
+            try {
+                ((LauncherApps) ctx.getSystemService(Context.LAUNCHER_APPS_SERVICE)).startAppDetailsActivity(a.cn, a.user != null ? a.user : android.os.Process.myUserHandle(), null, null);
+            } catch (Exception e2) { android.widget.Toast.makeText(ctx, "App info not available", android.widget.Toast.LENGTH_SHORT).show(); }
+        }
     }
 }

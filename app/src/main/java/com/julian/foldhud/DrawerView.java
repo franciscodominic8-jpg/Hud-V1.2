@@ -520,10 +520,24 @@ final class DrawerView extends LinearLayout {
                         else if (which == 2) { idx.toggleFav(a.key); refresh(); }
                         else if (which == 3) { idx.toggleHidden(a.key); refresh(); styleAll(); }
                         else if (which == 4) idx.appInfo(a);
-                        else if (a.mine) Open.start(host, new Intent(Intent.ACTION_DELETE, Uri.parse("package:" + a.pkg)));
+                        else if (a.mine) uninstall(a);
                         else idx.appInfo(a);
                     }
                 }).show();
+    }
+
+    void uninstall(AppIndex.App a) {
+        Uri u = Uri.parse("package:" + a.pkg);
+        Intent[] tries = {
+            new Intent(Intent.ACTION_UNINSTALL_PACKAGE, u).putExtra(Intent.EXTRA_RETURN_RESULT, false),
+            new Intent(Intent.ACTION_DELETE, u)
+        };
+        for (Intent i : tries) {
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            try { host.startActivity(i); return; } catch (Exception e) { /* try next */ }
+        }
+        Open.toast(host, "Cannot uninstall here - opening app info");
+        idx.appInfo(a);
     }
 
     void pickTile(final AppIndex.App a) {
