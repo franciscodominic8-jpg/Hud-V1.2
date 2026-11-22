@@ -429,6 +429,8 @@ final class DrawerView extends LinearLayout {
         styleAll();
         refresh();
         grid.setSelection(0);
+        grid.post(new Runnable() { @Override public void run() { grid.setSelection(0); grid.setSelection(0); } });
+        grid.postDelayed(new Runnable() { @Override public void run() { if (grid.getFirstVisiblePosition() != 0) grid.setSelection(0); } }, 120);
         clockH.removeCallbacks(clockTick);
         clockTick.run();
     }
